@@ -37,6 +37,10 @@
 .plabel{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
   padding:13px 15px 0;color:var(--muted);display:flex;align-items:center;gap:8px;}
 .panel.object .plabel{color:#7d93a8;}
+/* Projector & Backbone are the same "type" (heads of the trained net) -> mono uppercase.
+   "Without JEPA" is a different category (untrained baseline) -> different font. */
+.rt-nojepa{font-family:var(--sans);text-transform:none;letter-spacing:-.01em;font-weight:800;
+  font-size:14px;color:#e23b2e;}
 .tag{font-size:10px;letter-spacing:.08em;padding:2px 7px;border-radius:5px;}
 .tag.good{background:rgba(37,99,168,.13);color:var(--accent-2);}
 .tag.bad{background:rgba(242,92,24,.13);color:var(--accent);}
@@ -77,8 +81,8 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 <div class="wrap">
   <div class="eyebrow">JEPA · ModelNet40 · self-supervised</div>
   <h1 class="title">Rotation <em>Invariance</em></h1>
-  <p class="sub">Spin a shape and watch where its embedding lands. <b>With JEPA</b> it stays pinned
-  to its cluster; <b>without it</b>, the same rotation throws it across the map.</p>
+  <p class="sub">Spin a shape and watch its embedding. <b>With JEPA</b> it stays pinned to its cluster;
+  <b>without it</b> it scatters. And that invariance sits in the <b>projector</b>, not the <b>backbone</b>.</p>
 
   <div class="chips" id="chips"></div>
 
@@ -95,7 +99,7 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
         <div class="subm" id="projCos">cos 1.000</div></div>
     </section>
     <section class="panel plot">
-      <div class="plabel"><span id="rightTitle">Without JEPA</span> <span class="tag bad" id="rightTag">random init</span></div>
+      <div class="plabel"><span id="rightTitle" class="rt-nojepa">Without JEPA</span> <span class="tag bad" id="rightTag">random init</span></div>
       <canvas id="rightCanvas"></canvas>
       <div class="readout"><b id="rightDrift" style="color:#e23b2e">0.0</b><small>drift &middot; distance moved</small>
         <div class="subm" id="rightCos">cos 1.000</div></div>
@@ -205,6 +209,7 @@ DATA.show.forEach(name=>{const b=document.createElement("button");b.className="c
 document.getElementById("seg").onclick=e=>{const v=e.target.dataset.v;if(!v)return;state.right=v;
   document.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x.dataset.v===v));
   document.getElementById("rightTitle").textContent=v==="random"?"Without JEPA":"Backbone";
+  document.getElementById("rightTitle").classList.toggle("rt-nojepa",v==="random");  // diff font for the untrained baseline
   document.getElementById("rightTag").textContent=v==="random"?"random init":"pose-sensitive";
   render();};
 const playBtn=document.getElementById("play");
