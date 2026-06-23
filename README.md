@@ -12,6 +12,7 @@
   <img alt="Dataset" src="https://img.shields.io/badge/data-ModelNet40-2d6a4f"/>
   <img alt="Framework" src="https://img.shields.io/badge/built%20on-EB--JEPA-black?logo=github"/>
   <img alt="Probe" src="https://img.shields.io/badge/linear%20probe-86.0%25-blue"/>
+  <a href="https://helloelora.github.io/jepa-point-cloud/demo/"><img alt="Live demo" src="https://img.shields.io/badge/▶_live-interactive%20demo-F25C18"/></a>
 </div>
 
 <br>
@@ -25,6 +26,10 @@
 
 <p align="center">
   <img src="assets/rotation_embedding.gif" alt="Rotation-invariance embedding drift" width="820">
+</p>
+
+<p align="center">
+  <b><a href="https://helloelora.github.io/jepa-point-cloud/demo/">▶ Spin the shapes yourself in the interactive demo</a></b>
 </p>
 
 > Built during the **[Hack the World(s)](https://hacktheworlds.fr/)** hackathon (Track 6, 3D point clouds), on the [EB-JEPA](#-credits) framework. The encoder, the self-supervised loss, the linear probe, and the masked variant below are my work.
@@ -141,9 +146,10 @@ python -m examples.pointcloud.eval --ckpt <run>/latest.pth.tar
 python -m examples.pointcloud.mask_ijepa ROT=so3 MASK=mix RATIO=0.5 EPOCHS=100 OUT=<run>
 python -m examples.pointcloud.eval_masked --ckpt <run>/latest.pth.tar
 
-# rotation-invariance embedding-drift demo (the GIF above)
+# rotation-invariance embedding-drift demo (GIF + interactive page)
 python -m examples.pointcloud.embed_drift --ckpt <run>/latest.pth.tar --out <dir>
 python src/render_drift.py <dir>/embed_drift.json assets/rotation_embedding.gif
+python demo/build_demo.py        # -> self-contained demo/index.html
 ```
 
 The scripts import the EB-JEPA package, so place `src/` under `examples/pointcloud/` of an EB-JEPA checkout (or set `PYTHONPATH` to it).
