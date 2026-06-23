@@ -1,0 +1,13 @@
+# Core (training + eval). Tested with Python 3.11.
+torch>=2.2
+numpy>=1.26
+h5py>=3.10
+omegaconf>=2.3
+scikit-learn>=1.4
+matplotlib>=3.8
+imageio>=2.34          # GIF rendering for the visualizations
+
+# Training ran on:
+#   - VivaTech "Hack the World(s)" cluster (Dalia), then
+#   - CentraleSupelec "la Ruche" HPC, A100 (torch 2.12 + cu130).
+# The encoder builds on the EB-JEPA hackathon framework (see "Credits").

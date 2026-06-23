@@ -1,0 +1,24 @@
+# PointCloud SSL pretraining config (ModelNet40, view-invariant VICReg).
+meta:
+  seed: 0
+  ckpt_dir: checkpoints/pointcloud/dev   # repo-relative, writable on Dalia (override per-run for the sweep)
+data:
+  data_root: /Users/elora/Documents/elora-perso/data/modelnet40_ply_hdf5_2048
+  n_points: 1024
+  n_classes: 40
+  batch_size: 128
+  num_workers: 8
+  rotate: so3            # so3 (full view-invariance) | z (azimuth only) | none
+  jitter: 0.01
+  scale_lo: 0.8
+  scale_hi: 1.25
+model:
+  in_channels: 3        # (x, y, z)
+  out_dim: 1024         # PointNet global feature dim D
+  proj_spec: 1024-2048-2048   # VICReg projector: out_dim -> 2048 -> 2048
+  std_coeff: 25.0
+  cov_coeff: 1.0
+optim:
+  epochs: 60
+  lr: 1.0e-3
+  weight_decay: 1.0e-6

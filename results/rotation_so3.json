@@ -1,0 +1,32 @@
+{
+  "ckpt": "/lustre/work/vivatech-hacktheworld/edrouilhe/ckpts/pointcloud/exp_so3_long_s0/latest.pth.tar",
+  "tag": "rotate=so3 ep200 seed0",
+  "backbone_matrix": [
+    [
+      86.18314424635332,
+      10.53484602917342
+    ],
+    [
+      43.76012965964344,
+      46.43435980551053
+    ]
+  ],
+  "rows": [
+    "aligned",
+    "SO3"
+  ],
+  "cols": [
+    "aligned",
+    "SO3"
+  ],
+  "projection_matrix": [
+    [
+      77.6742301458671,
+      51.41815235008104
+    ],
+    [
+      64.62722852512157,
+      65.64019448946516
+    ]
+  ]
+}
