@@ -25,7 +25,12 @@
 </p>
 
 <p align="center">
-  <img src="assets/rotation_embedding.gif" alt="Rotation-invariance embedding drift" width="820">
+  <img src="assets/jepa_vs_nojepa.gif" alt="With JEPA the embedding holds, without it it scatters" width="900">
+</p>
+
+<p align="center">
+  <sub>Spin a shape and track its embedding. <b>With JEPA</b> the point stays pinned to its cluster (drift ≈ 2).
+  <b>Without JEPA</b> the same rotation throws it across the map (drift ≈ 10).</sub>
 </p>
 
 <p align="center">
@@ -80,7 +85,13 @@ This is the result I find most interesting. I trained under three rotation regim
 
 Under full SO(3) test rotations, the backbone collapses to **10%** while the projector holds at **51%**. The invariance the model is trained for ends up concentrated in the projection head, the part you normally throw away. The backbone stays largely pose-sensitive. That is a useful caution: "VICReg makes the encoder rotation-invariant" is too quick a claim.
 
-The GIF at the top shows it live: spin one object and track where its embedding lands in a fixed PCA of the whole test set. In the **projector** space the point barely moves (cosine similarity stays at 0.99, drift near zero). In the **backbone** space the same rotation drags it across the map. A randomly initialized encoder drifts even further. Same encoder, two heads, opposite behavior.
+You can watch this directly. Spin one object and track where its embedding lands in a fixed PCA of the test set. In the **projector** space the point barely moves; in the **backbone** space the same rotation drags it across the map.
+
+<p align="center">
+  <img src="assets/rotation_embedding.gif" alt="Projector stays pinned, backbone wanders" width="900">
+</p>
+
+The hero GIF at the top makes the practical version of this point: the projector is what JEPA actually buys you. Drop the trained encoder for a random one ("without JEPA") and the embedding drifts about five to ten times further, exactly the gap a self-supervised objective is there to close.
 
 ### 3. When does training collapse?
 

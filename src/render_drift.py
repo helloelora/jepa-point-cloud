@@ -1,11 +1,13 @@
-"""Render the rotation-invariance embedding-drift GIF from embed_drift.json.
+"""Render a rotation-invariance embedding-drift GIF from embed_drift.json.
 
 Left: a point cloud spinning through a full turn. Middle/right: where its embedding lands
-in a fixed PCA(2) of the whole ModelNet40 test set, for the trained PROJECTOR (stays glued
-to its cluster) vs the BACKBONE (wanders). Live cos(emb_0, emb_t) readout. This reproduces
-the neighbouring team's interactive demo as a static GIF for the README.
+in a fixed PCA(2) of the whole ModelNet40 test set, for two encoder views. A live "drift"
+counter (distance travelled from angle 0) shows how far the point has wandered right now,
+which is where the with/without-JEPA gap really shows.
 
-Run:  python render_drift.py results/embed_drift.json assets/rotation_embedding.gif
+Run:
+  python render_drift.py <src.json> <out.gif> left=projector:With JEPA right=random:Without JEPA
+Defaults reproduce projector vs backbone.
 """
 import json
 import sys
@@ -18,13 +20,24 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else "results/embed_drift.json"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "assets/rotation_embedding.gif"
-OBJECTS = ["airplane", "chair", "guitar"]          # cycled in the GIF
-VIEWS = [("projector", "Projector  ·  rotation-invariant"),
-         ("backbone", "Backbone  ·  pose-sensitive")]
+args = dict(a.split("=", 1) for a in sys.argv[3:] if "=" in a)
+
+
+def spec(s, default_key, default_label):
+    if s is None:
+        return default_key, default_label
+    key, _, label = s.partition(":")
+    return key, (label or key)
+
+
+LEFT = spec(args.get("left"), "projector", "Projector")
+RIGHT = spec(args.get("right"), "backbone", "Backbone")
+TITLE = args.get("title", "Spin a shape, watch its embedding  ·  ModelNet40")
+OBJECTS = ["airplane", "chair", "guitar"]
 
 d = json.load(open(SRC))
-angles = d["projector"]["angles"]; AX = np.array(d["projector"]["axis"])
-NA = len(angles)
+angles = d["projector"]["angles"]; AX = np.array(d["projector"]["axis"]); NA = len(angles)
+GOOD, BAD = "#1f9e6b", "#e23b2e"          # with-JEPA (green) / without (red)
 
 
 def rot_about(axis, a):
@@ -34,45 +47,47 @@ def rot_about(axis, a):
                      [z*x*C-y*s, z*y*C+x*s, c+z*z*C]])
 
 
-frames = [(o, t) for o in OBJECTS for t in range(NA)]   # object x angle
+def panel_color(key):
+    return GOOD if key == "projector" else BAD
 
-fig = plt.figure(figsize=(13, 4.6))
+
+frames = [(o, t) for o in OBJECTS for t in range(NA)]
+
+fig = plt.figure(figsize=(13, 4.7))
 ax3d = fig.add_subplot(1, 3, 1, projection="3d")
-axp = fig.add_subplot(1, 3, 2)
-axb = fig.add_subplot(1, 3, 3)
-fig.subplots_adjust(left=0.01, right=0.99, top=0.88, bottom=0.04, wspace=0.18)
-fig.suptitle("Spin an object, watch its embedding  ·  trained encoder, ModelNet40",
-             fontsize=12, weight="bold")
+axL = fig.add_subplot(1, 3, 2)
+axR = fig.add_subplot(1, 3, 3)
+fig.subplots_adjust(left=0.01, right=0.99, top=0.86, bottom=0.04, wspace=0.16)
+fig.suptitle(TITLE, fontsize=12.5, weight="bold")
 
 
 def draw(i):
     obj, t = frames[i]
-    for ax in (ax3d, axp, axb):
+    for ax in (ax3d, axL, axR):
         ax.clear()
-    # --- left: spinning cloud ---
     pts = np.array(d["projector"]["objects"][obj]["pts"])
     R = rot_about(AX, angles[t]); P = pts @ R.T
     ax3d.scatter(P[:, 0], P[:, 2], P[:, 1], s=3, c=P[:, 1], cmap="viridis", depthshade=True)
     ax3d.set_title(obj, fontsize=11); ax3d.set_axis_off()
     ax3d.set_xlim(-1, 1); ax3d.set_ylim(-1, 1); ax3d.set_zlim(-1, 1)
     ax3d.view_init(elev=18, azim=35)
-    # --- embedding panels ---
-    for ax, (key, title) in zip((axp, axb), VIEWS):
+    for ax, (key, label) in zip((axL, axR), (LEFT, RIGHT)):
+        col = panel_color(key)
         v = d[key]; bg = np.array(v["bg"]); y = np.array(v["bg_y"])
         o = v["objects"][obj]; traj = np.array(o["traj"]); cls = o["label"]
-        ax.scatter(bg[:, 0], bg[:, 1], s=4, c="0.82", alpha=0.6, linewidths=0)     # all classes
+        ax.scatter(bg[:, 0], bg[:, 1], s=4, c="0.83", alpha=0.6, linewidths=0)
         same = y == cls
         ax.scatter(bg[same, 0], bg[same, 1], s=9, c="#3b7dd8", alpha=0.7, linewidths=0,
-                   label=f"{obj} class")                                            # its cluster
+                   label=f"{obj} class")
         tr = traj[:t + 1]
-        ax.plot(tr[:, 0], tr[:, 1], "-", c="#ff7f0e", lw=1.4, alpha=0.85)           # trail
-        ax.scatter(traj[t, 0], traj[t, 1], s=90, c="#ff7f0e", edgecolors="k",
-                   linewidths=0.8, zorder=5)                                         # current
-        cos = o["cos"][t]
-        ax.set_title(title, fontsize=10.5)
-        ax.text(0.03, 0.96, f"cos(emb$_0$,emb$_t$) = {cos:.3f}\ndrift = {o['drift']:.2f}",
-                transform=ax.transAxes, va="top", fontsize=9,
-                bbox=dict(boxstyle="round", fc="white", ec="0.7", alpha=0.9))
+        ax.plot(tr[:, 0], tr[:, 1], "-", c=col, lw=1.6, alpha=0.9)
+        ax.scatter(traj[t, 0], traj[t, 1], s=95, c=col, edgecolors="k", linewidths=0.8, zorder=5)
+        live = float(np.linalg.norm(traj[t] - traj[0]))          # distance travelled now
+        ax.set_title(label, fontsize=11.5, color=col, weight="bold")
+        ax.text(0.035, 0.955, f"drift  {live:4.1f}", transform=ax.transAxes, va="top",
+                fontsize=20, weight="bold", color=col, family="monospace")
+        ax.text(0.04, 0.80, f"cos {o['cos'][t]:.3f}", transform=ax.transAxes, va="top",
+                fontsize=9.5, color="0.35", family="monospace")
         lo, hi = bg.min(0) - 1, bg.max(0) + 1
         ax.set_xlim(lo[0], hi[0]); ax.set_ylim(lo[1], hi[1])
         ax.set_xticks([]); ax.set_yticks([]); ax.legend(loc="lower right", fontsize=8, framealpha=0.9)

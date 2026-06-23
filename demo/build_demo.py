@@ -82,12 +82,13 @@ canvas{display:block;width:100%;height:300px;touch-action:none;}
 .objname{position:absolute;bottom:12px;left:15px;font-family:var(--mono);font-size:13px;
   color:#cbd6e2;letter-spacing:.05em;}
 .readout{position:absolute;top:38px;right:15px;text-align:right;font-family:var(--mono);}
-.readout b{display:block;font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1;}
-.readout small{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
-.readout .drift{font-size:11px;color:var(--muted);margin-top:4px;}
-.cos-hi{color:var(--accent-2);} .cos-lo{color:var(--accent);}
-.seg{display:flex;gap:0;margin:auto 15px 14px;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:max-content;}
-.seg button{font-family:var(--mono);font-size:11px;letter-spacing:.05em;padding:6px 12px;border:0;background:var(--paper);
+.readout b{display:block;font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+.readout small{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.readout .subm{font-size:12px;color:var(--muted);margin-top:5px;font-family:var(--mono);}
+.seg{display:flex;align-items:center;gap:8px;margin:auto 15px 15px;}
+.seglab{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.seg .opts{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.seg button{font-family:var(--mono);font-size:12px;letter-spacing:.03em;padding:8px 13px;border:0;background:var(--paper);
   color:var(--muted);cursor:pointer;}
 .seg button.on{background:var(--ink);color:#fff;}
 .controls{display:flex;align-items:center;gap:16px;margin:20px 0 0;padding:16px 18px;
@@ -113,8 +114,8 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 <div class="wrap">
   <div class="eyebrow">JEPA · ModelNet40 · self-supervised</div>
   <h1 class="title">Rotation <em>Invariance</em></h1>
-  <p class="sub">Spin a shape and watch where its embedding lands. The projector keeps it
-  pinned to its cluster; the backbone lets it drift across the map.</p>
+  <p class="sub">Spin a shape and watch where its embedding lands. <b>With JEPA</b> it stays pinned
+  to its cluster; <b>without it</b>, the same rotation throws it across the map.</p>
 
   <div class="chips" id="chips"></div>
 
@@ -125,19 +126,22 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
       <div class="objname" id="objName">airplane</div>
     </section>
     <section class="panel plot">
-      <div class="plabel">Projector <span class="tag good">invariant</span></div>
+      <div class="plabel">Projector <span class="tag good">with JEPA</span></div>
       <canvas id="projCanvas"></canvas>
-      <div class="readout"><b id="projCos" class="cos-hi">1.000</b><small>cos(emb&#8320;, emb&#8348;)</small>
-        <div class="drift" id="projDrift">drift 0.0</div></div>
+      <div class="readout"><b id="projDrift" style="color:#1f9e6b">0.0</b><small>drift &middot; distance moved</small>
+        <div class="subm" id="projCos">cos 1.000</div></div>
     </section>
     <section class="panel plot">
-      <div class="plabel"><span id="rightTitle">Backbone</span> <span class="tag bad" id="rightTag">pose-sensitive</span></div>
+      <div class="plabel"><span id="rightTitle">Without JEPA</span> <span class="tag bad" id="rightTag">random init</span></div>
       <canvas id="rightCanvas"></canvas>
-      <div class="readout"><b id="rightCos" class="cos-lo">0.94</b><small>cos(emb&#8320;, emb&#8348;)</small>
-        <div class="drift" id="rightDrift">drift 0.0</div></div>
+      <div class="readout"><b id="rightDrift" style="color:#e23b2e">0.0</b><small>drift &middot; distance moved</small>
+        <div class="subm" id="rightCos">cos 1.000</div></div>
       <div class="seg" id="seg">
-        <button data-v="backbone" class="on">Backbone</button>
-        <button data-v="random">Untrained</button>
+        <span class="seglab">compare against</span>
+        <div class="opts">
+          <button data-v="random" class="on">Without JEPA</button>
+          <button data-v="backbone">Backbone</button>
+        </div>
       </div>
     </section>
   </div>
@@ -158,7 +162,7 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 <script>
 const DATA = __DATA__;
 const angles = DATA.angles, NA = angles.length, axis = DATA.axis;
-const state = {obj: DATA.show[0], t: 0, right: "backbone", playing: true};
+const state = {obj: DATA.show[0], t: 0, right: "random", playing: true};
 
 // ---- viridis-ish ramp for the object point cloud ----
 const RAMP = [[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37]];
@@ -215,15 +219,17 @@ function drawEmbed(canvas,vk){const{x,w,h}=setup(canvas);
   x.beginPath();x.arc(sx(cp),sy(cp),5.5,0,7);x.fill();x.stroke();}
 
 function fmtCos(c){return (c>=0?"":"-")+Math.abs(c).toFixed(3);}
+function dist(a,b){return Math.hypot(a[0]-b[0],a[1]-b[1]);}   // live drift = distance from angle 0
 function render(){
   drawObject();
   drawEmbed(document.getElementById("projCanvas"),"projector");
   drawEmbed(document.getElementById("rightCanvas"),state.right);
   const pc=DATA.projector.objects[state.obj], rc=DATA[state.right].objects[state.obj];
-  document.getElementById("projCos").textContent=fmtCos(pc.cos[state.t]);
-  document.getElementById("rightCos").textContent=fmtCos(rc.cos[state.t]);
-  document.getElementById("projDrift").textContent="drift "+pc.drift.toFixed(1);
-  document.getElementById("rightDrift").textContent="drift "+rc.drift.toFixed(1);
+  document.getElementById("projDrift").textContent=dist(pc.traj[state.t],pc.traj[0]).toFixed(1);
+  document.getElementById("rightDrift").textContent=dist(rc.traj[state.t],rc.traj[0]).toFixed(1);
+  document.getElementById("rightDrift").style.color=state.right==="random"?"#e23b2e":"#F25C18";
+  document.getElementById("projCos").textContent="cos "+fmtCos(pc.cos[state.t]);
+  document.getElementById("rightCos").textContent="cos "+fmtCos(rc.cos[state.t]);
   document.getElementById("angleVal").textContent=Math.round(angles[state.t]*180/Math.PI)+"°";
   document.getElementById("angle").value=state.t;
 }
@@ -235,7 +241,7 @@ DATA.show.forEach(name=>{const b=document.createElement("button");b.className="c
     document.getElementById("objName").textContent=name;render();};chips.appendChild(b);});
 document.getElementById("seg").onclick=e=>{const v=e.target.dataset.v;if(!v)return;state.right=v;
   document.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x.dataset.v===v));
-  document.getElementById("rightTitle").textContent=v==="random"?"Untrained":"Backbone";
+  document.getElementById("rightTitle").textContent=v==="random"?"Without JEPA":"Backbone";
   document.getElementById("rightTag").textContent=v==="random"?"random init":"pose-sensitive";
   render();};
 const playBtn=document.getElementById("play");
