@@ -55,7 +55,7 @@ def rot_about(axis, a):
 
 frames = [(o, t) for o in OBJECTS for t in range(NA)]
 
-fig = plt.figure(figsize=(13.2, 5.7)); fig.patch.set_facecolor(GROUND)
+fig = plt.figure(figsize=(13.2, 5.7)); fig.patch.set_facecolor("white")
 R_OBJ = [0.012, 0.20, 0.265, 0.74]
 R_L = [0.31, 0.20, 0.312, 0.74]
 R_R = [0.655, 0.20, 0.312, 0.74]
